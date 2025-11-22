@@ -77,6 +77,11 @@ Beispiel:
 docker exec -it nosql-course-redis-redis-1 redis-cli
 ```
 
+Alternativ den Service-Namen verwenden: 
+```bash
+docker compose exec redis redis-cli
+```
+
 Beispielbefehle:
 
 - Anzahl der Schlüssel:
