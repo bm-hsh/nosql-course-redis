@@ -1,0 +1,90 @@
+IoT Use Case: Smart Meter Monitoring
+1. Übersicht
+Dieser Ordner enthält die Implementierung des IoT-Use-Cases (basierend auf Intel Berkeley Lab Data 1) mit Redis als NoSQL-Datenbank.
+Das Szenario simuliert ein Smart-Grid-Netzwerk aus 54 Stromkästen (Sensoren), die kontinuierlich Telemetriedaten senden. Das Projekt demonstriert:
+•	Redis-Datenmodellierung für Zeitreihen (Time-Series) mittels Hashes und Sorted Sets.
+•	ETL-Prozess: Import von hochfrequenten Messdaten (data.txt) in den Arbeitsspeicher.
+•	CRUD-Operationen: Anlegen, Lesen, Aktualisieren und Löschen von Messwerten.
+•	Analytics: Repräsentative Queries wie Lastgang-Analysen, Temperatur-Rankings und Live-Alerting.
+2. Voraussetzungen
+•	Docker Desktop installiert
+•	Python 3 installiert
+Abhängigkeiten installieren:
+Bash
+pip install redis
+(Oder pip install -r requirements.txt falls vorhanden)
+Wichtig: Die Rohdaten-Datei (data.txt) muss entpackt im Ordner data/ liegen.
+3. Redis über Docker starten
+Im Projekt-Root befindet sich die Datei docker-compose.yml, die den Redis-Container definiert.
+Schritt 1: Docker starten:
+Bash
+docker compose up -d
+Schritt 2: Überprüfen, ob Redis läuft:
+Bash
+docker ps
+Der Redis-Container sollte auf Port 6379 erreichbar sein.
+4. Daten in Redis importieren
+Das Skript import_iot.py liest die Sensordaten ein und mappt sie auf das Smart-Meter-Szenario (Mote ID $\rightarrow$Stromkasten ID, Voltage $\rightarrow$ Netzspannung).
+Ausführen:
+Bash
+python3 import_iot.py
+Erwartete Ausgabe:
+Starte Import...
+Test-Limit erreicht (10.000 Zeilen).
+Fertig! 10000 Messwerte importiert.
+(Optional: Falls wir das Ranking-Skript separat haben, hier auch python3 build_index.py ausführen).
+5. Überprüfen, ob der Import funktioniert hat
+Redis-CLI im Container öffnen:
+Bash
+docker compose exec redis redis-cli
+Beispielbefehle zur Prüfung der Daten:
+•	Anzahl der importierten Messwerte:
+Code-Snippet
+DBSIZE
+•	Live-Check (Die 5 aktuellsten Werte von Stromkasten 1):
+Code-Snippet
+ZREVRANGE meter:1:timeline 0 4 WITHSCORES
+•	Detailansicht eines Messwerts:
+Code-Snippet
+HGETALL reading:1:<timestamp_id>
+(Ersetze <timestamp_id> durch eine Nummer aus der ZREVRANGE-Liste)
+•	Top-Temperaturen (Ranking):
+Code-Snippet
+ZREVRANGE stats:hottest 0 9 WITHSCORES
+6. Queries und CRUD-Operationen ausführen
+Das Skript tasks_final.py demonstriert die logische Anwendungsschicht:
+•	Create: Einfügen eines manuellen Messwerts.
+•	Read: Paginierung durch historische Daten (Seite 1, Seite 2...).
+•	Update: Korrektur eines fehlerhaften Messwerts.
+•	Delete: Löschen von Testdaten.
+•	Analytics: Berechnung der Durchschnittstemperatur (Client-side Aggregation).
+•	Alerting: Setzen eines temporären Alarms mit TTL (Time-To-Live).
+Ausführen:
+python3 tasks_final.py
+
+Die Ergebnisse werden detailliert im Terminal ausgegeben.
+7. Datenmodell
+Wir nutzen ein hybrides Modell, um schnellen Lesezugriff und Zeitreihen-Funktionalität zu kombinieren:
+Zweck	Redis-Key Schema	Datentyp	Beschreibung
+Messwert	reading:<id>:<epoch>	Hash	Enthält Voltage (v), Temp (t), Humidity (h).
+Zeitstrahl	meter:<id>:timeline	Sorted Set	Indexiert Messwerte chronologisch (Score = Zeit).
+Ranking	stats:hottest	Sorted Set	Sortiert Messwerte nach Temperatur (Score = Temp).
+Alarm	alert:<id>:overheat	String	Temporärer Key mit Ablaufdatum (TTL).
+8. Ablaufübersicht
+1.	Start:
+Bash
+docker compose up -d
+2.	Daten laden:
+Bash
+python3 import_iot.py
+(Ggf. python3 build_index.py für Rankings)
+3.	Manuelle Prüfung (Optional):
+Bash
+docker compose exec redis redis-cli
+4.	Demo ausführen (CRUD & Queries):
+Bash
+python3 tasks_final.py
+5.	Stop:
+Bash
+docker compose stop
+
