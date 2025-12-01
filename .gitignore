@@ -1,3 +1,10 @@
+*/data/*.csv
+*/data/*.txt
+movies/data/
+iot/data/
+e_commerce/data/
+social_media/data/
+
 __pycache__/
 *.pyc
 venv/
