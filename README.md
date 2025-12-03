@@ -24,13 +24,19 @@ Dieses Projekt implementiert **4 Use Cases** mit **Redis** als NoSQL-Datenbank i
 
 ```bash
 # 1. Python-Dependencies installieren
+# Windows:
 pip install -r requirements.txt
+# Mac:
+pip3 install -r requirements.txt
 
 # 2. Redis starten (Vorher Docker Desktop starten)
 docker compose up -d
 
 # 3. Hauptmenü starten
+# Windows:
 python main.py
+# Mac:
+python3 main.py
 ```
 
 Das interaktive Menü bietet:

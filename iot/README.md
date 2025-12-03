@@ -17,7 +17,10 @@ Dieser Ordner enthält die Implementierung des IoT-Use-Cases mit Redis als NoSQL
 Dependencies installieren (im Projekt-Root):
 
 ```bash
+# Windows:
 pip install -r requirements.txt
+# Mac:
+pip3 install -r requirements.txt
 ```
 
 Die Datendatei `data.txt` muss im Ordner `iot/data` liegen. Falls keine Daten vorhanden sind, generiert das Import-Skript automatisch Beispieldaten.
@@ -50,7 +53,10 @@ Ausführen:
 
 ```bash
 cd iot
+# Windows:
 python import.py
+# Mac:
+python3 import.py
 ```
 
 Erwartete Ausgabe:
@@ -161,7 +167,10 @@ Das Skript `queries.py` demonstriert:
 Ausführen:
 
 ```bash
+# Windows:
 python queries.py
+# Mac:
+python3 queries.py
 ```
 
 Die Ergebnisse werden im Terminal ausgegeben.
@@ -213,7 +222,10 @@ docker compose up -d
 3. Daten importieren:
 
 ```bash
+# Windows:
 python iot/import.py
+# Mac:
+python3 iot/import.py
 ```
 
 4. Import optional über `redis-cli` prüfen
@@ -221,7 +233,10 @@ python iot/import.py
 5. Queries und CRUD demonstrieren:
 
 ```bash
+# Windows:
 python iot/queries.py
+# Mac:
+python3 iot/queries.py
 ```
 
 ## 9. Besonderheiten des IoT Use Cases mit Redis

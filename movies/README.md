@@ -17,7 +17,10 @@ Dieser Ordner enthält die Implementierung des Movies-Use-Cases mit Redis als No
 Dependencies installieren (im Projekt-Root):
 
 ```bash
+# Windows:
 pip install -r requirements.txt
+# Mac:
+pip3 install -r requirements.txt
 ```
 
 Die CSV-Dateien müssen im Ordner `movies/data` liegen. Falls keine Daten vorhanden sind, generiert das Import-Skript automatisch Beispieldaten.
@@ -50,7 +53,10 @@ Ausführen:
 
 ```bash
 cd movies
+# Windows:
 python import.py
+# Mac:
+python3 import.py
 ```
 
 Erwartete Ausgabe:
@@ -188,7 +194,10 @@ Das Skript `queries.py` demonstriert:
 Ausführen:
 
 ```bash
+# Windows:
 python queries.py
+# Mac:
+python3 queries.py
 ```
 
 Die Ergebnisse werden im Terminal ausgegeben.
@@ -258,7 +267,10 @@ docker compose up -d
 3. Daten importieren:
 
 ```bash
+# Windows:
 python movies/import.py
+# Mac:
+python3 movies/import.py
 ```
 
 4. Import optional über `redis-cli` prüfen
@@ -266,7 +278,10 @@ python movies/import.py
 5. Queries und CRUD demonstrieren:
 
 ```bash
+# Windows:
 python movies/queries.py
+# Mac:
+python3 movies/queries.py
 ```
 
 ## 9. Besonderheiten des Movies Use Cases mit Redis

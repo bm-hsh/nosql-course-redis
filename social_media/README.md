@@ -17,7 +17,10 @@ Dieser Ordner enthält die Implementierung des Social-Media-Use-Cases mit Redis 
 Dependencies installieren (im Projekt-Root):
 
 ```bash
+# Windows:
 pip install -r requirements.txt
+# Mac:
+pip3 install -r requirements.txt
 ```
 
 Die CSV-Datei muss im Ordner `social_media/data` liegen.
@@ -50,7 +53,10 @@ Ausführen:
 
 ```bash
 cd social_media
+# Windows:
 python import.py
+# Mac:
+python3 import.py
 ```
 
 Erwartete Ausgabe:
@@ -162,7 +168,10 @@ Das Skript `queries.py` demonstriert:
 Ausführen:
 
 ```bash
+# Windows:
 python queries.py
+# Mac:
+python3 queries.py
 ```
 
 Die Ergebnisse werden im Terminal ausgegeben.
@@ -220,7 +229,10 @@ docker compose up -d
 3. Daten importieren:
 
 ```bash
+# Windows:
 python social_media/import.py
+# Mac:
+python3 social_media/import.py
 ```
 
 4. Import optional über `redis-cli` prüfen
@@ -228,7 +240,10 @@ python social_media/import.py
 5. Queries und CRUD demonstrieren:
 
 ```bash
+# Windows:
 python social_media/queries.py
+# Mac:
+python3 social_media/queries.py
 ```
 
 ## 9. Besonderheiten des Social Media Use Cases mit Redis

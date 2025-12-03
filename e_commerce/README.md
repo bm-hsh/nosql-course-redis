@@ -17,7 +17,10 @@ Dieser Ordner enthält die Implementierung des E-Commerce-Use-Cases mit Redis al
 Dependencies installieren (im Projekt-Root):
 
 ```bash
+# Windows:
 pip install -r requirements.txt
+# Mac:
+pip3 install -r requirements.txt
 ```
 
 Die CSV-Dateien müssen im Ordner `e_commerce/data` liegen.
@@ -50,7 +53,10 @@ Ausführen:
 
 ```bash
 cd e_commerce
+# Windows:
 python import.py
+# Mac:
+python3 import.py
 ```
 
 Erwartete Ausgabe:
@@ -210,7 +216,10 @@ Das Skript `queries.py` demonstriert:
 Ausführen:
 
 ```bash
+# Windows:
 python queries.py
+# Mac:
+python3 queries.py
 ```
 
 Die Ergebnisse werden im Terminal ausgegeben.
@@ -290,7 +299,10 @@ docker compose up -d
 3. Daten importieren:
 
 ```bash
+# Windows:
 python e_commerce/import.py
+# Mac:
+python3 e_commerce/import.py
 ```
 
 4. Import optional über `redis-cli` prüfen
@@ -298,7 +310,10 @@ python e_commerce/import.py
 5. Queries und CRUD demonstrieren:
 
 ```bash
+# Windows:
 python e_commerce/queries.py
+# Mac:
+python3 e_commerce/queries.py
 ```
 
 ## 9. Besonderheiten des E-Commerce Use Cases mit Redis
