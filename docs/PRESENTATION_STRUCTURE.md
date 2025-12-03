@@ -85,18 +85,18 @@ Anhang
 
 ---
 
-## 2. PowerPoint-Struktur (15 Folien)
+## 2. PowerPoint-Struktur (18 Folien)
 
-Für **4 Studenten à 5 Minuten** (ca. 3-4 Folien pro Person):
+Für **5 Studenten à 5 Minuten** (ca. 3-4 Folien pro Person):
 
-### Student 1: Redis als Key-Value Store (5 min)
+### Student 1: Einleitung & Redis-Grundlagen (5 min)
 
 | Folie | Inhalt |
 |-------|--------|
 | 1 | **Titelfolie** - Thema, Gruppenmitglieder, Datum, "Redis - Key-Value Store" |
 | 2 | **NoSQL-Kategorien im Überblick** - Document, Column, Graph, Key-Value (Redis hervorheben), Kernprinzip: Schlüssel → Wert |
 | 3 | **Redis Datenstrukturen** - String, Hash, List, Set, Sorted Set mit Grafik/Diagramm |
-| 4 | **Redis Architektur** - In-Memory, Single-Threaded, Replikation, Konsistenzmodell, Skalierung (Redis Cluster) |
+| 4 | **Redis Architektur** - In-Memory, Single-Threaded, Replikation, Konsistenzmodell |
 
 ### Student 2: Datenmodellierung (5 min)
 
@@ -107,7 +107,7 @@ Für **4 Studenten à 5 Minuten** (ca. 3-4 Folien pro Person):
 | 7 | **Datenmodell-Diagramm** - Visualisierung eines Use Cases, Datentyp-Zuordnung |
 | 8 | **Indexierungsstrategien** - Multi-Index-Pattern (Sets), Sorted Sets für Rankings |
 
-### Student 3: Query-Beispiele (5 min)
+### Student 3: Queries (5 min)
 
 | Folie | Inhalt |
 |-------|--------|
@@ -115,25 +115,34 @@ Für **4 Studenten à 5 Minuten** (ca. 3-4 Folien pro Person):
 | 10 | **Analytische Queries** - Code-Snippets: Top-10 Produkte, Trending Hashtags, Zeitreihen |
 | 11 | **Query-Komplexität** - O(1) für Hash-Lookups, O(log N) für Sorted Sets, Tabelle mit Beispielen |
 
-### Student 4: Analyse & Fazit (5 min)
+### Student 4: Performance & Use Case Eignung (5 min)
 
 | Folie | Inhalt |
 |-------|--------|
 | 12 | **Performance-Ergebnisse** - Import-Zeiten pro Use Case (Tabelle/Balkendiagramm), Query-Zeiten |
-| 13 | **Eignung pro Use Case** - Ranking-Tabelle mit Begründung |
-| 14 | **Redis vs. Andere Systeme** - Vergleichstabelle (MongoDB, Neo4j, Cassandra) |
-| 15 | **Lessons Learned & Fazit** - Ideale Einsatzgebiete, Einschränkungen, Best Practices |
+| 13 | **Speicherverbrauch** - RAM-Nutzung pro Use Case, Skalierungsüberlegungen |
+| 14 | **Eignung pro Use Case** - Ranking-Tabelle mit Begründung (Social Media → Movies) |
+
+### Student 5: Key Findings & Fazit (5 min)
+
+| Folie | Inhalt |
+|-------|--------|
+| 15 | **Key Findings** - Wichtigste Erkenntnisse aus allen Use Cases, was hat gut funktioniert? |
+| 16 | **Lessons Learned** - Best Practices für Redis (Pipelining, Key-Naming, Indexierung) |
+| 17 | **Einschränkungen** - Wann Redis NICHT geeignet ist (komplexe Joins, große Datenmengen, Ad-hoc Queries) |
+| 18 | **Fazit** - Kernaussage, Empfehlungen für den Einsatz von Redis |
 
 ### Zusammenfassung
 
 | Student | Fokus | Folien | Zeit |
 |---------|-------|--------|------|
-| 1 | Redis-Theorie (NoSQL-Typ, Architektur) | 1-4 | 5 min |
+| 1 | Einleitung & Redis-Grundlagen | 1-4 | 5 min |
 | 2 | Datenmodellierung (Schema, Patterns) | 5-8 | 5 min |
 | 3 | Queries (CRUD, Analytik, Code) | 9-11 | 5 min |
-| 4 | Analyse (Performance, Vergleich, Fazit) | 12-15 | 5 min |
+| 4 | Performance & Use Case Eignung | 12-14 | 5 min |
+| 5 | Key Findings & Fazit | 15-18 | 5 min |
 
-**Total: 15 Folien für 20 Minuten**
+**Total: 18 Folien für 25 Minuten**
 
 ---
 
