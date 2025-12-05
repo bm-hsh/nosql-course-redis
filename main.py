@@ -183,10 +183,18 @@ def get_use_case_count(use_case):
     if use_case == "e_commerce":
         return r.scard("order:all"), "orders"
     elif use_case == "iot":
-        return r.scard("sensor:all"), "sensors"
+        total_readings = sum(r.zcard(f"sensor:{i}:readings") for i in range(1, 55))
+        return total_readings, "readings"
     elif use_case == "social_media":
         return r.scard("post:all"), "posts"
     elif use_case == "movies":
+        user_count = r.scard("user:all")
+        if user_count > 0:
+            sample_users = list(r.srandmember("user:all", 100))
+            total_sample = sum(r.zcard(f"user:{u.decode()}:ratings") for u in sample_users)
+            avg_per_user = total_sample / len(sample_users)
+            estimated_ratings = int(avg_per_user * user_count)
+            return estimated_ratings, "ratings"
         return r.scard("movie:all"), "movies"
     return 0, "items"
 
@@ -222,8 +230,10 @@ def run_import(use_case):
 
     # Show result
     count, entity = get_use_case_count(use_case)
+    records_per_sec = count / elapsed if elapsed > 0 else 0
     print(f"\n{Colors.GREEN}Import completed in {elapsed:.2f}s{Colors.END}")
-    print(f"{Colors.GREEN}Total {entity} in Redis: {count}{Colors.END}")
+    print(f"{Colors.GREEN}Total {entity} in Redis: {count:,}{Colors.END}")
+    print(f"{Colors.GREEN}Throughput: {records_per_sec:,.0f} {entity}/sec{Colors.END}")
 
     wait_for_enter()
 
@@ -287,20 +297,24 @@ def run_all_imports():
             subprocess.run([sys.executable, script_path])
             elapsed = time.perf_counter() - start
             count, entity = get_use_case_count(folder)
+            rps = count / elapsed if elapsed > 0 else 0
             import_times.append((name, elapsed, count, entity))
-            print(f"\n{Colors.GREEN}  -> {name} imported in {elapsed:.2f}s ({count} {entity}){Colors.END}")
+            print(f"\n{Colors.GREEN}  -> {name} imported in {elapsed:.2f}s ({count:,} {entity}, {rps:,.0f}/s){Colors.END}")
         else:
             print(f"{Colors.RED}Script not found: {script_path}{Colors.END}")
 
     total_elapsed = time.perf_counter() - total_start
 
     # Show timing summary
-    print(f"\n{Colors.BOLD}{'='*50}{Colors.END}")
+    print(f"\n{Colors.BOLD}{'='*65}{Colors.END}")
     print(f"{Colors.BOLD}IMPORT TIME SUMMARY{Colors.END}")
-    print(f"{Colors.BOLD}{'='*50}{Colors.END}")
+    print(f"{Colors.BOLD}{'='*65}{Colors.END}")
+    print(f"  {'Use Case':<15} {'Time':>10} {'Records':>15} {'Records/sec':>15}")
+    print(f"  {'-'*60}")
     for name, elapsed, count, entity in import_times:
-        print(f"  {name:<15} {elapsed:>8.2f}s  ({count} {entity})")
-    print(f"  {'-'*40}")
+        rps = count / elapsed if elapsed > 0 else 0
+        print(f"  {name:<15} {elapsed:>8.2f}s {count:>14,} {rps:>14,.0f}/s")
+    print(f"  {'-'*60}")
     print(f"  {'TOTAL':<15} {total_elapsed:>8.2f}s")
 
     wait_for_enter()
