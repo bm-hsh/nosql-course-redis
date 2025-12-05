@@ -282,30 +282,32 @@ def show_memory_usage():
 
     used_memory = info.get("used_memory_human", "N/A")
     used_memory_peak = info.get("used_memory_peak_human", "N/A")
-    used_memory_dataset = info.get("used_memory_dataset", 0)
 
     print(f"  Current memory usage:     {used_memory}")
     print(f"  Peak memory usage:        {used_memory_peak}")
-    print(f"  Dataset memory:           {used_memory_dataset / 1024 / 1024:.2f} MB")
 
-    # Key count per use case
-    print(f"\n  Keys per use case:")
+    # Memory per use case 
+    print(f"\n  Memory per use case:")
+    print(f"    {'Use Case':<15} {'Keys':>12} {'Memory':>12}")
+    print(f"    {'-'*40}")
 
-    patterns = [
-        ("E-Commerce", ["order:*", "customer:*", "product:*", "seller:*"]),
-        ("IoT", ["sensor:*"]),
-        ("Social Media", ["post:*", "hashtag:*", "platform:*", "sentiment:*"]),
-        ("Movies", ["movie:*", "user:*", "genre:*", "actor:*", "director:*"]),
+    use_cases = [
+        ("E-Commerce", ["order:*", "customer:*", "product:*", "seller:*"], "~200 MB"),
+        ("IoT", ["sensor:*"], "~350 MB"),
+        ("Social Media", ["post:*", "hashtag:*", "platform:*", "social:*"], "~50 MB"),
+        ("Movies", ["movie:*", "user:*", "genre:*", "actor:*", "director:*"], "~4 GB"),
     ]
 
-    for name, keys in patterns:
-        total = 0
-        for pattern in keys:
-            count = len(list(r.scan_iter(pattern, count=10000)))
-            total += count
-        print(f"    {name:<15} {total:>10,} keys")
+    total_keys = 0
+    for name, patterns, mem_est in use_cases:
+        keys = 0
+        for pattern in patterns:
+            keys += len(list(r.scan_iter(pattern, count=10000)))
+        total_keys += keys
+        print(f"    {name:<15} {keys:>12,} {mem_est:>12}")
 
-    print(f"\n  Total keys in database:   {r.dbsize():,}")
+    print(f"    {'-'*40}")
+    print(f"    {'TOTAL':<15} {total_keys:>12,} {used_memory:>12}")
 
 
 #############################################################
