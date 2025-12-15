@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Data Model - Redis</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8fafc;
+            padding: 30px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #1e293b;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .column-title {
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            padding: 8px 10px;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        .card-body {
+            background: white;
+            padding: 8px 10px;
+            border: 2px solid;
+            border-top: none;
+        }
+        .card-body ul {
+            margin: 0;
+            padding-left: 16px;
+            font-size: 11px;
+            color: #475569;
+        }
+        .card-body li {
+            margin: 3px 0;
+            font-family: monospace;
+        }
+        /* Hash - Blue */
+        .hash .card-header { background: #3b82f6; }
+        .hash .card-body { border-color: #3b82f6; }
+        /* Set - Green */
+        .set .card-header { background: #22c55e; }
+        .set .card-body { border-color: #22c55e; }
+        /* Sorted Set - Orange */
+        .sorted-set .card-header { background: #f97316; }
+        .sorted-set .card-body { border-color: #f97316; }
+        /* List - Purple */
+        .list .card-header { background: #a855f7; }
+        .list .card-body { border-color: #a855f7; }
+
+        .type-badge {
+            font-size: 9px;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-left: 5px;
+        }
+        .code-block {
+            background: #1e293b;
+            border-radius: 0 0 8px 8px;
+            padding: 8px 10px;
+            margin: 0;
+            overflow-x: auto;
+        }
+        .code-block code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 10px;
+            color: #e2e8f0;
+            white-space: pre;
+            line-height: 1.3;
+        }
+        .code-block .comment { color: #64748b; }
+        .code-block .string { color: #a5f3fc; }
+        .code-block .keyword { color: #c4b5fd; }
+        .code-block .function { color: #fcd34d; }
+
+        .arrow {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 16px;
+            padding: 2px 0;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+        }
+        .note {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .info-box {
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 6px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>IoT Data Model - Redis Key-Value Store</h1>
+
+    <div class="container">
+        <!-- Column 1: Sensor Entity -->
+        <div class="column">
+            <div class="column-title">Sensor Entity</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    sensor:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>mote_id</li>
+                        <li>pos_x, pos_y</li>
+                        <li>status</li>
+                        <li>type</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:74-80</span>
+r.<span class="function">hset</span>(<span class="string">f"sensor:{mote_id}"</span>, mapping={
+    <span class="string">"mote_id"</span>: mote_id,
+    <span class="string">"pos_x"</span>: pos[0],
+    <span class="string">"pos_y"</span>: pos[1],
+    <span class="string">"status"</span>: <span class="string">"active"</span>,
+    <span class="string">"type"</span>: <span class="string">"Mica2"</span>
+})</code>
+                </div>
+            </div>
+
+            <div class="arrow">▼</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    sensor:&lt;id&gt;:latest <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>temperature</li>
+                        <li>humidity</li>
+                        <li>light</li>
+                        <li>voltage</li>
+                        <li>timestamp, date, time</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:205-206</span>
+r.<span class="function">hset</span>(<span class="string">f"sensor:{mote_id}:latest"</span>,
+    mapping={
+        <span class="string">"temperature"</span>: round(temp, 2),
+        <span class="string">"humidity"</span>: round(humidity, 2),
+        <span class="string">"light"</span>: round(light, 2),
+        <span class="string">"voltage"</span>: round(voltage, 3),
+        <span class="string">"timestamp"</span>: epoch,
+        <span class="string">"date"</span>: date_str,
+        <span class="string">"time"</span>: time_str
+    })</code>
+                </div>
+            </div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    sensor:&lt;id&gt;:connectivity <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>target_id: probability</li>
+                        <li>{ "5": 0.85, "7": 0.92 }</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:249</span>
+r.<span class="function">hset</span>(
+    <span class="string">f"sensor:{from_sensor}:connectivity"</span>,
+    str(to_sensor),
+    probability
+)</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Time Series Data -->
+        <div class="column">
+            <div class="column-title">Time Series Data</div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    sensor:&lt;id&gt;:readings <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: JSON reading</li>
+                        <li>Score: Unix Timestamp</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:155-165</span>
+reading = json.<span class="function">dumps</span>({
+    <span class="string">"temp"</span>: round(temperature, 2),
+    <span class="string">"humidity"</span>: round(humidity, 2),
+    <span class="string">"light"</span>: round(light, 2),
+    <span class="string">"voltage"</span>: round(voltage, 3),
+    <span class="string">"date"</span>: date_str,
+    <span class="string">"time"</span>: time_str
+})
+r.<span class="function">zadd</span>(<span class="string">f"sensor:{mote_id}:readings"</span>,
+    {reading: epoch})</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fff7ed; border: 1px solid #f97316;">
+                <div style="font-size: 10px; color: #c2410c; font-weight: 600; margin-bottom: 4px;">Time Range Query:</div>
+<pre style="font-size: 9px; color: #c2410c; margin: 0; font-family: monospace;">
+# queries.py:91-102
+readings = r.zrangebyscore(
+    f"sensor:{mote_id}:readings",
+    start_epoch,
+    end_epoch,
+    start=0, num=limit
+)
+return [json.loads(r) for r in readings]</pre>
+            </div>
+
+            <div class="info-box" style="background: #f0f9ff; border: 1px solid #3b82f6;">
+                <div style="font-size: 10px; color: #1d4ed8; font-weight: 600; margin-bottom: 4px;">Delete Old Readings:</div>
+<pre style="font-size: 9px; color: #1d4ed8; margin: 0; font-family: monospace;">
+# queries.py:156-159
+removed = r.zremrangebyscore(
+    f"sensor:{mote_id}:readings",
+    "-inf", before_epoch
+)</pre>
+            </div>
+
+            <div class="info-box" style="background: #fefce8; border: 1px solid #eab308;">
+                <div style="font-size: 10px; color: #a16207; font-weight: 600; margin-bottom: 4px;">Why Sorted Set?</div>
+                <div style="font-size: 9px; color: #64748b;">
+                    → Score = timestamp for ordering<br>
+                    → ZRANGEBYSCORE for time windows<br>
+                    → O(log N + M) range queries<br>
+                    → No RedisTimeSeries needed
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 3: Global Indexes -->
+        <div class="column">
+            <div class="column-title">Global Indexes</div>
+
+            <div class="card set">
+                <div class="card-header">
+                    sensor:all <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>{ 1, 2, 3, ..., 54 }</li>
+                        <li>All sensor IDs</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:83</span>
+r.<span class="function">sadd</span>(<span class="string">"sensor:all"</span>, mote_id)</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #f0fdf4; border: 1px solid #22c55e;">
+                <div style="font-size: 10px; color: #166534; font-weight: 600; margin-bottom: 4px;">Query Examples:</div>
+<pre style="font-size: 9px; color: #166534; margin: 0; font-family: monospace;">
+# queries.py:106-113
+def get_all_sensors():
+    return [int(s.decode())
+        for s in r.smembers("sensor:all")]
+
+def get_sensor_count():
+    return r.scard("sensor:all")</pre>
+            </div>
+
+            <div class="info-box" style="background: #fefce8; border: 1px solid #eab308;">
+                <div style="font-size: 10px; color: #a16207; font-weight: 600; margin-bottom: 4px;">Sensor Status Values:</div>
+                <div style="font-size: 9px; color: #64748b;">
+                    <strong>active</strong> - normal operation<br>
+                    <strong>inactive</strong> - offline<br>
+                    <strong>maintenance</strong> - under repair
+                </div>
+<pre style="font-size: 9px; color: #a16207; margin-top: 6px; font-family: monospace;">
+# queries.py:121-123
+def update_sensor_status(mote_id, new_status):
+    r.hset(f"sensor:{mote_id}",
+        "status", new_status)</pre>
+            </div>
+        </div>
+
+        <!-- Column 4: Rankings & Alerts -->
+        <div class="column">
+            <div class="column-title">Rankings & Alerts</div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    sensor:avg:temperature <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Sensor-ID</li>
+                        <li>Score: Avg Temperature</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:207-209</span>
+<span class="keyword">for</span> mote_id, total <span class="keyword">in</span> temp_sums.items():
+    avg_temp = total / temp_counts[mote_id]
+    r.<span class="function">zadd</span>(<span class="string">"sensor:avg:temperature"</span>,
+        {mote_id: avg_temp})</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fff7ed; border: 1px solid #f97316;">
+                <div style="font-size: 10px; color: #c2410c; font-weight: 600; margin-bottom: 4px;">Top/Bottom Queries:</div>
+<pre style="font-size: 9px; color: #c2410c; margin: 0; font-family: monospace;">
+# queries.py:167-173, 176-182
+# Hottest sensors
+r.zrevrange("sensor:avg:temperature",
+    0, n-1, withscores=True)
+
+# Coldest sensors
+r.zrange("sensor:avg:temperature",
+    0, n-1, withscores=True)</pre>
+            </div>
+
+            <div class="card list">
+                <div class="card-header">
+                    sensor:alerts <span class="type-badge">(List)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>[ alert1, alert2, ... ]</li>
+                        <li>Low battery warnings</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:187-188, 210-211</span>
+<span class="keyword">if</span> voltage < LOW_BATTERY_THRESHOLD:
+    alerts.append(<span class="string">f"Low battery..."</span>)
+
+<span class="keyword">for</span> alert <span class="keyword">in</span> alerts[:1000]:
+    r.<span class="function">lpush</span>(<span class="string">"sensor:alerts"</span>, alert)</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fef2f2; border: 1px solid #ef4444;">
+                <div style="font-size: 10px; color: #dc2626; font-weight: 600; margin-bottom: 4px;">Get Recent Alerts:</div>
+<pre style="font-size: 9px; color: #dc2626; margin: 0; font-family: monospace;">
+# queries.py:185-191
+def get_recent_alerts(n=10):
+    alerts = r.lrange("sensor:alerts",
+        0, n-1)
+    return [a.decode() for a in alerts]
+
+# Total alert count
+r.llen("sensor:alerts")</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
+            Hash
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #22c55e;"></div>
+            Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f97316;"></div>
+            Sorted Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #a855f7;"></div>
+            List
+        </div>
+    </div>
+
+    <div class="note">
+        IoT Use Case - Redis Data Model with Time Series, Sensor Rankings, and Alerts | Python: iot/import.py, iot/queries.py
+    </div>
+</body>
+</html>

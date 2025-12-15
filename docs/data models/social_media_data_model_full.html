@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Data Model - Redis</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8fafc;
+            padding: 30px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #1e293b;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .column-title {
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            padding: 10px 12px;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+        .card-body {
+            background: white;
+            padding: 10px 12px;
+            border: 2px solid;
+            border-top: none;
+        }
+        .card-body ul {
+            margin: 0;
+            padding-left: 18px;
+            font-size: 12px;
+            color: #475569;
+        }
+        .card-body li {
+            margin: 4px 0;
+            font-family: monospace;
+        }
+        /* Hash - Blue */
+        .hash .card-header { background: #3b82f6; }
+        .hash .card-body { border-color: #3b82f6; }
+        /* Set - Green */
+        .set .card-header { background: #22c55e; }
+        .set .card-body { border-color: #22c55e; }
+        /* Sorted Set - Orange */
+        .sorted-set .card-header { background: #f97316; }
+        .sorted-set .card-body { border-color: #f97316; }
+        /* List - Purple */
+        .list .card-header { background: #a855f7; }
+        .list .card-body { border-color: #a855f7; }
+
+        .type-badge {
+            font-size: 10px;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-left: 6px;
+        }
+        .code-block {
+            background: #1e293b;
+            border-radius: 0 0 8px 8px;
+            padding: 10px 12px;
+            margin: 0;
+            overflow-x: auto;
+        }
+        .code-block code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 11px;
+            color: #e2e8f0;
+            white-space: pre;
+            line-height: 1.4;
+        }
+        .code-block .comment { color: #64748b; }
+        .code-block .string { color: #a5f3fc; }
+        .code-block .keyword { color: #c4b5fd; }
+        .code-block .function { color: #fcd34d; }
+
+        .index-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .index-item {
+            background: #f0fdf4;
+            border: 1px solid #22c55e;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #166534;
+        }
+        .arrow {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 18px;
+            padding: 3px 0;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        .note {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .info-box {
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Social Media Data Model - Redis Key-Value Store</h1>
+
+    <div class="container">
+        <!-- Column 1: Main Entities -->
+        <div class="column">
+            <div class="column-title">Main Entities</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    post:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>text</li>
+                        <li>timestamp</li>
+                        <li>platform</li>
+                        <li>country</li>
+                        <li>likes, retweets</li>
+                        <li>sentiment</li>
+                        <li>user_id</li>
+                        <li>engagement</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:111-122</span>
+r.<span class="function">hset</span>(<span class="string">f"post:{post_id}"</span>, mapping={
+    <span class="string">"text"</span>: text[:500],
+    <span class="string">"timestamp"</span>: timestamp,
+    <span class="string">"platform"</span>: platform,
+    <span class="string">"country"</span>: country,
+    <span class="string">"likes"</span>: likes,
+    <span class="string">"retweets"</span>: retweets,
+    <span class="string">"sentiment"</span>: sentiment,
+    <span class="string">"user_id"</span>: user_id,
+    <span class="string">"engagement"</span>: engagement
+})</code>
+                </div>
+            </div>
+
+            <div class="arrow">▼</div>
+
+            <div class="card set">
+                <div class="card-header">
+                    post:&lt;id&gt;:hashtags <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>{ travel, adventure, ... }</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:134</span>
+<span class="keyword">for</span> tag <span class="keyword">in</span> hashtags:
+    r.<span class="function">sadd</span>(<span class="string">f"post:{post_id}:hashtags"</span>, tag)</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    post:all <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>{ post_id1, post_id2, ... }</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:158</span>
+r.<span class="function">sadd</span>(<span class="string">"post:all"</span>, post_id)</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: User Entity -->
+        <div class="column">
+            <div class="column-title">User Entity</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    social:user:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>user_id</li>
+                        <li>post_count</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:183-186</span>
+r.<span class="function">hset</span>(<span class="string">f"social:user:{user_id}"</span>,
+    mapping={
+        <span class="string">"user_id"</span>: user_id,
+        <span class="string">"post_count"</span>: post_count
+    })
+r.<span class="function">sadd</span>(<span class="string">"social:user:all"</span>, user_id)</code>
+                </div>
+            </div>
+
+            <div class="arrow">▼</div>
+
+            <div class="card list">
+                <div class="card-header">
+                    social:user:&lt;id&gt;:posts <span class="type-badge">(List)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>[ post_id1, post_id2, ... ]</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:141</span>
+r.<span class="function">lpush</span>(
+    <span class="string">f"social:user:{user_id}:posts"</span>,
+    post_id
+)</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    social:user:all <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>All user IDs</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:187</span>
+r.<span class="function">sadd</span>(<span class="string">"social:user:all"</span>, user_id)</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 3: Secondary Indexes -->
+        <div class="column">
+            <div class="column-title">Secondary Indexes</div>
+
+            <div class="card set">
+                <div class="card-header">
+                    Index Keys <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <div class="index-grid">
+                        <div class="index-item">platform:twitter:posts</div>
+                        <div class="index-item">sentiment:joy:posts</div>
+                        <div class="index-item">hashtag:travel:posts</div>
+                        <div class="index-item">country:DE:posts</div>
+                    </div>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:135, 147-149</span>
+<span class="comment"># Hashtag index</span>
+r.<span class="function">sadd</span>(<span class="string">f"hashtag:{tag}:posts"</span>, post_id)
+
+<span class="comment"># Platform, Country, Sentiment indexes</span>
+r.<span class="function">sadd</span>(<span class="string">f"platform:{platform}:posts"</span>, post_id)
+r.<span class="function">sadd</span>(<span class="string">f"country:{country}:posts"</span>, post_id)
+r.<span class="function">sadd</span>(<span class="string">f"sentiment:{sentiment}:posts"</span>, post_id)</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #f0fdf4; border: 1px solid #22c55e;">
+                <div style="font-size: 11px; color: #166534; font-weight: 600; margin-bottom: 6px;">Pattern:</div>
+                <code style="font-size: 11px; color: #166534;">&lt;attribute&gt;:&lt;value&gt;:posts</code>
+                <div style="font-size: 10px; color: #64748b; margin-top: 6px;">
+                    → Contains Set of Post-IDs<br>
+                    → Enables O(1) lookups
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #f0f9ff; border: 1px solid #3b82f6;">
+                <div style="font-size: 11px; color: #1d4ed8; font-weight: 600; margin-bottom: 6px;">Query Example:</div>
+<pre style="font-size: 10px; color: #1d4ed8; margin: 0; font-family: monospace;">
+<span class="comment"># queries.py</span>
+posts = r.smembers("platform:twitter:posts")
+posts = r.sinter(
+    "sentiment:joy:posts",
+    "country:DE:posts"
+)</pre>
+            </div>
+        </div>
+
+        <!-- Column 4: Rankings -->
+        <div class="column">
+            <div class="column-title">Rankings</div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    post:trending <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Post-ID</li>
+                        <li>Score: Engagement</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:153-155</span>
+<span class="keyword">if</span> engagement > 0:
+    r.<span class="function">zadd</span>(<span class="string">"post:trending"</span>,
+        {post_id: engagement})</code>
+                </div>
+            </div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    hashtag:trending <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Hashtag</li>
+                        <li>Score: Count</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:179-180</span>
+<span class="keyword">for</span> tag, freq <span class="keyword">in</span> hashtag_counts.items():
+    r.<span class="function">zadd</span>(<span class="string">"hashtag:trending"</span>,
+        {tag: freq})</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fff7ed; border: 1px solid #f97316;">
+                <div style="font-size: 11px; color: #c2410c; font-weight: 600; margin-bottom: 6px;">Query:</div>
+<pre style="font-size: 10px; color: #c2410c; margin: 0; font-family: monospace;">
+<span class="comment"># queries.py - Top 10 trending</span>
+r.zrevrange("post:trending", 0, 9,
+    withscores=True)
+r.zrevrange("hashtag:trending", 0, 9,
+    withscores=True)</pre>
+                <div style="font-size: 10px; color: #64748b; margin-top: 6px;">
+                    → O(log N) complexity
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
+            Hash
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #22c55e;"></div>
+            Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f97316;"></div>
+            Sorted Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #a855f7;"></div>
+            List
+        </div>
+    </div>
+
+    <div class="note">
+        Social Media Use Case - Redis Data Model with Secondary Indexes and Rankings | Python implementation: social_media/import.py
+    </div>
+</body>
+</html>

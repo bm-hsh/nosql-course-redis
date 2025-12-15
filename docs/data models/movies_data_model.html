@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movies Data Model - Redis</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8fafc;
+            padding: 30px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #1e293b;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .column-title {
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            padding: 8px 10px;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        .card-body {
+            background: white;
+            padding: 8px 10px;
+            border: 2px solid;
+            border-top: none;
+        }
+        .card-body ul {
+            margin: 0;
+            padding-left: 16px;
+            font-size: 11px;
+            color: #475569;
+        }
+        .card-body li {
+            margin: 3px 0;
+            font-family: monospace;
+        }
+        /* Hash - Blue */
+        .hash .card-header { background: #3b82f6; }
+        .hash .card-body { border-color: #3b82f6; }
+        /* Set - Green */
+        .set .card-header { background: #22c55e; }
+        .set .card-body { border-color: #22c55e; }
+        /* Sorted Set - Orange */
+        .sorted-set .card-header { background: #f97316; }
+        .sorted-set .card-body { border-color: #f97316; }
+        /* List - Purple */
+        .list .card-header { background: #a855f7; }
+        .list .card-body { border-color: #a855f7; }
+        /* String - Teal */
+        .string .card-header { background: #14b8a6; }
+        .string .card-body { border-color: #14b8a6; }
+
+        .type-badge {
+            font-size: 9px;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-left: 5px;
+        }
+        .code-block {
+            background: #1e293b;
+            border-radius: 0 0 8px 8px;
+            padding: 8px 10px;
+            margin: 0;
+            overflow-x: auto;
+        }
+        .code-block code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 10px;
+            color: #e2e8f0;
+            white-space: pre;
+            line-height: 1.3;
+        }
+        .code-block .comment { color: #64748b; }
+        .code-block .string { color: #a5f3fc; }
+        .code-block .keyword { color: #c4b5fd; }
+        .code-block .function { color: #fcd34d; }
+
+        .index-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+        .index-item {
+            background: #f0fdf4;
+            border: 1px solid #22c55e;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-family: monospace;
+            font-size: 9px;
+            color: #166534;
+        }
+        .arrow {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 16px;
+            padding: 2px 0;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+        }
+        .note {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .info-box {
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 6px;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Movies Data Model - Redis Key-Value Store</h1>
+
+    <div class="container">
+        <!-- Column 1: Movie Entity -->
+        <div class="column">
+            <div class="column-title">Movie Entity</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    movie:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>title, original_title</li>
+                        <li>release_date</li>
+                        <li>budget, revenue</li>
+                        <li>runtime, popularity</li>
+                        <li>vote_average, vote_count</li>
+                        <li>overview, language</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:80-93</span>
+r.<span class="function">hset</span>(<span class="string">f"movie:{movie_id}"</span>, mapping={
+    <span class="string">"title"</span>: row.get(<span class="string">"title"</span>, <span class="string">""</span>),
+    <span class="string">"original_title"</span>: row.get(<span class="string">"original_title"</span>),
+    <span class="string">"release_date"</span>: row.get(<span class="string">"release_date"</span>),
+    <span class="string">"budget"</span>: row.get(<span class="string">"budget"</span>, <span class="string">"0"</span>),
+    <span class="string">"revenue"</span>: row.get(<span class="string">"revenue"</span>, <span class="string">"0"</span>),
+    <span class="string">"runtime"</span>: row.get(<span class="string">"runtime"</span>, <span class="string">"0"</span>),
+    <span class="string">"vote_average"</span>: row.get(<span class="string">"vote_average"</span>),
+    <span class="string">"popularity"</span>: row.get(<span class="string">"popularity"</span>),
+    <span class="string">"overview"</span>: row.get(<span class="string">"overview"</span>)[:500]
+})</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    movie:&lt;id&gt;:genres <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>{ Drama, Comedy, ... }</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:97-99</span>
+<span class="keyword">for</span> genre <span class="keyword">in</span> genres:
+    r.<span class="function">sadd</span>(<span class="string">f"movie:{movie_id}:genres"</span>, genre)
+    r.<span class="function">sadd</span>(<span class="string">f"genre:{genre.lower()}:movies"</span>, movie_id)</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    movie:&lt;id&gt;:keywords <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>{ love, adventure, ... }</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:350-352</span>
+<span class="keyword">for</span> kw <span class="keyword">in</span> keywords_data[:20]:
+    r.<span class="function">sadd</span>(<span class="string">f"movie:{movie_id}:keywords"</span>,
+        kw[<span class="string">"name"</span>])</code>
+                </div>
+            </div>
+
+            <div class="card list">
+                <div class="card-header">
+                    movie:&lt;id&gt;:cast <span class="type-badge">(List)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>[ actor1, actor2, ... ]</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:175-179</span>
+<span class="keyword">for</span> actor <span class="keyword">in</span> cast_data[:10]:
+    r.<span class="function">lpush</span>(<span class="string">f"movie:{movie_id}:cast"</span>,
+        actor[<span class="string">"name"</span>])
+    r.<span class="function">sadd</span>(<span class="string">f"actor:{name}:movies"</span>, movie_id)</code>
+                </div>
+            </div>
+
+            <div class="card list">
+                <div class="card-header">
+                    movie:&lt;id&gt;:crew <span class="type-badge">(List)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>[ Director: name, ... ]</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:186-191</span>
+<span class="keyword">if</span> member.get(<span class="string">"job"</span>) == <span class="string">"Director"</span>:
+    r.<span class="function">lpush</span>(<span class="string">f"movie:{movie_id}:crew"</span>,
+        <span class="string">f"Director: {name}"</span>)
+    r.<span class="function">sadd</span>(<span class="string">f"director:{name}:movies"</span>,
+        movie_id)</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: User & Ratings -->
+        <div class="column">
+            <div class="column-title">User & Ratings</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    user:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>user_id</li>
+                        <li>rating_count</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:289</span>
+r.<span class="function">hset</span>(<span class="string">f"user:{user_id}"</span>, mapping={
+    <span class="string">"user_id"</span>: user_id,
+    <span class="string">"rating_count"</span>: rating_count
+})
+r.<span class="function">sadd</span>(<span class="string">"user:all"</span>, user_id)</code>
+                </div>
+            </div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    user:&lt;id&gt;:ratings <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Movie-ID</li>
+                        <li>Score: Rating (1-5)</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:253</span>
+r.<span class="function">zadd</span>(<span class="string">f"user:{user_id}:ratings"</span>,
+    {movie_id: rating})</code>
+                </div>
+            </div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    movie:&lt;id&gt;:ratings <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: User-ID</li>
+                        <li>Score: Rating (1-5)</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:254</span>
+r.<span class="function">zadd</span>(<span class="string">f"movie:{movie_id}:ratings"</span>,
+    {user_id: rating})</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    user:&lt;id&gt;:watchlist <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>{ movie_id1, movie_id2, ... }</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># queries.py:62</span>
+r.<span class="function">sadd</span>(<span class="string">f"user:{user_id}:watchlist"</span>,
+    movie_id)</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fff7ed; border: 1px solid #f97316;">
+                <div style="font-size: 10px; color: #c2410c; font-weight: 600; margin-bottom: 4px;">Avg Rating Update:</div>
+<pre style="font-size: 9px; color: #c2410c; margin: 0; font-family: monospace;">
+# import.py:306-309
+avg = total / rating_counts[movie_id]
+r.hset(f"movie:{movie_id}", mapping={
+    "user_rating_avg": round(avg, 2),
+    "user_rating_count": count
+})</pre>
+            </div>
+        </div>
+
+        <!-- Column 3: Secondary Indexes -->
+        <div class="column">
+            <div class="column-title">Secondary Indexes</div>
+
+            <div class="card set">
+                <div class="card-header">
+                    Index Keys <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <div class="index-grid">
+                        <div class="index-item">genre:drama:movies</div>
+                        <div class="index-item">genre:comedy:movies</div>
+                        <div class="index-item">actor:tom_hanks:movies</div>
+                        <div class="index-item">director:spielberg:movies</div>
+                    </div>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:99, 179, 191</span>
+r.<span class="function">sadd</span>(<span class="string">f"genre:{genre.lower()}:movies"</span>, movie_id)
+r.<span class="function">sadd</span>(<span class="string">f"actor:{name}:movies"</span>, movie_id)
+r.<span class="function">sadd</span>(<span class="string">f"director:{name}:movies"</span>, movie_id)</code>
+                </div>
+            </div>
+
+            <div class="card string">
+                <div class="card-header">
+                    ID Lookups <span class="type-badge">(String)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>imdb:tt0114709 → movie_id</li>
+                        <li>tmdb:862 → movie_id</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:408-412</span>
+r.<span class="function">set</span>(<span class="string">f"imdb:tt{imdb_id}"</span>, movie_id)
+r.<span class="function">set</span>(<span class="string">f"tmdb:{tmdb_id}"</span>, movie_id)</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    Global Indexes <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>movie:all → all movie IDs</li>
+                        <li>user:all → all user IDs</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:103, 290</span>
+r.<span class="function">sadd</span>(<span class="string">"movie:all"</span>, movie_id)
+r.<span class="function">sadd</span>(<span class="string">"user:all"</span>, user_id)</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #f0fdf4; border: 1px solid #22c55e;">
+                <div style="font-size: 10px; color: #166534; font-weight: 600; margin-bottom: 4px;">Query Examples:</div>
+<pre style="font-size: 9px; color: #166534; margin: 0; font-family: monospace;">
+# queries.py
+r.smembers("genre:drama:movies")
+r.get("imdb:tt0114709")  # → movie_id
+r.sinter("genre:action:movies",
+         "genre:comedy:movies")</pre>
+            </div>
+        </div>
+
+        <!-- Column 4: Rankings -->
+        <div class="column">
+            <div class="column-title">Rankings</div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    movie:top_rated <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Movie-ID</li>
+                        <li>Score: Avg Rating</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:119, 306</span>
+<span class="keyword">if</span> vote_count >= 10:
+    r.<span class="function">zadd</span>(<span class="string">"movie:top_rated"</span>,
+        {movie_id: vote_avg})</code>
+                </div>
+            </div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    movie:popular <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Movie-ID</li>
+                        <li>Score: Popularity</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:108-110</span>
+popularity = <span class="function">float</span>(row.get(<span class="string">"popularity"</span>))
+r.<span class="function">zadd</span>(<span class="string">"movie:popular"</span>,
+    {movie_id: popularity})</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fff7ed; border: 1px solid #f97316;">
+                <div style="font-size: 10px; color: #c2410c; font-weight: 600; margin-bottom: 4px;">Top-N Queries:</div>
+<pre style="font-size: 9px; color: #c2410c; margin: 0; font-family: monospace;">
+# queries.py:225-229
+results = r.zrevrange(
+    "movie:top_rated", 0, n-1,
+    withscores=True)
+# → [(movie_id, rating), ...]</pre>
+            </div>
+
+            <div class="info-box" style="background: #f0f9ff; border: 1px solid #3b82f6;">
+                <div style="font-size: 10px; color: #1d4ed8; font-weight: 600; margin-bottom: 4px;">Recommendations:</div>
+<pre style="font-size: 9px; color: #1d4ed8; margin: 0; font-family: monospace;">
+# queries.py:264-301
+# Genre-based recommendations
+liked = r.zrangebyscore(
+    f"user:{uid}:ratings", 4, 5)
+for mid in liked:
+    genres = r.smembers(
+        f"movie:{mid}:genres")</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
+            Hash
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #22c55e;"></div>
+            Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f97316;"></div>
+            Sorted Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #a855f7;"></div>
+            List
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #14b8a6;"></div>
+            String
+        </div>
+    </div>
+
+    <div class="note">
+        Movies Use Case - Redis Data Model with Ratings, Indexes, and Recommendations | Python: movies/import.py, movies/queries.py
+    </div>
+</body>
+</html>
