@@ -104,7 +104,7 @@ imdb:<imdb_id>          -> STRING movie_id
 
 ### 2.3 Design-Pattern: Multi-Index
 
-Redis hat keine sekundären Indizes. Daher werden **manuelle Indizes** als Sets erstellt:
+Redis hat keine automatischen sekundären Indizes. Daher werden **manuelle Indizes** als Sets erstellt:
 
 ```python
 # Ein Post wird in mehreren Indizes gespeichert
@@ -141,12 +141,12 @@ pipe.execute()
 
 ### Import-Zeiten (gemessen)
 
-| Use Case | Records | Import-Zeit |
-|----------|---------|-------------|
-| E-Commerce | ~100k Orders | ~5-10s |
-| IoT | ~2.3M Readings | ~30-60s |
-| Social Media | ~700 Posts | <1s |
-| Movies | ~45k Movies + 26M Ratings | ~3-5min |
+| Use Case | Records | Import-Zeit | Records/sec |
+|----------|---------|-------------|-------------|
+| E-Commerce | 99,441 Orders | 19.6s | 5,066/s |
+| IoT | 1,816,582 Readings | 59.6s | 30,491/s |
+| Social Media | 732 Posts | 0.3s | 2,183/s |
+| Movies | 25,694,485 Ratings | 607s (~10min) | 42,311/s |
 
 ---
 
@@ -232,11 +232,13 @@ r.zrem("post:trending", "1")
 
 | Operation | Durchschnittliche Latenz | Throughput |
 |-----------|-------------------------|------------|
-| GET (String) | ~0.1 ms | ~10,000 ops/sec |
-| HGETALL (Hash) | ~0.1-0.3 ms | ~5,000-10,000 ops/sec |
-| ZREVRANGE Top 10 | ~0.1-0.2 ms | ~8,000 ops/sec |
-| SCARD (Count) | ~0.05 ms | ~20,000 ops/sec |
-| Pipeline (1000 ops) | ~5-10 ms total | ~100,000 ops/sec |
+| GET (String) | ~0.31 ms | ~3,200 ops/sec |
+| HGETALL (Hash) | ~0.31-0.36 ms | ~2,800-3,200 ops/sec |
+| ZREVRANGE Top 10 | ~0.33 ms | ~3,000 ops/sec |
+| SCARD (Count) | ~0.29 ms | ~3,400 ops/sec |
+| SMEMBERS (große Sets) | ~18 ms | ~53 ops/sec |
+
+*Hinweis: Messungen über Docker-Netzwerk auf Windows. Native Redis-Installationen erreichen höhere Werte.*
 
 #### Skalierbarkeit
 

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Data Model - Redis</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8fafc;
+            padding: 30px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #1e293b;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .column-title {
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            padding: 6px 8px;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        .card-body {
+            background: white;
+            padding: 6px 8px;
+            border: 2px solid;
+            border-top: none;
+        }
+        .card-body ul {
+            margin: 0;
+            padding-left: 14px;
+            font-size: 10px;
+            color: #475569;
+        }
+        .card-body li {
+            margin: 2px 0;
+            font-family: monospace;
+        }
+        /* Hash - Blue */
+        .hash .card-header { background: #3b82f6; }
+        .hash .card-body { border-color: #3b82f6; }
+        /* Set - Green */
+        .set .card-header { background: #22c55e; }
+        .set .card-body { border-color: #22c55e; }
+        /* Sorted Set - Orange */
+        .sorted-set .card-header { background: #f97316; }
+        .sorted-set .card-body { border-color: #f97316; }
+        /* List - Purple */
+        .list .card-header { background: #a855f7; }
+        .list .card-body { border-color: #a855f7; }
+
+        .type-badge {
+            font-size: 8px;
+            font-weight: normal;
+            opacity: 0.9;
+            margin-left: 4px;
+        }
+        .code-block {
+            background: #1e293b;
+            border-radius: 0 0 8px 8px;
+            padding: 6px 8px;
+            margin: 0;
+            overflow-x: auto;
+        }
+        .code-block code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 9px;
+            color: #e2e8f0;
+            white-space: pre;
+            line-height: 1.2;
+        }
+        .code-block .comment { color: #64748b; }
+        .code-block .string { color: #a5f3fc; }
+        .code-block .keyword { color: #c4b5fd; }
+        .code-block .function { color: #fcd34d; }
+
+        .arrow {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+            padding: 1px 0;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #64748b;
+        }
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+        }
+        .note {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .info-box {
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 9px;
+        }
+        .index-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3px;
+        }
+        .index-item {
+            background: #f0fdf4;
+            border: 1px solid #22c55e;
+            border-radius: 4px;
+            padding: 3px 5px;
+            font-family: monospace;
+            font-size: 8px;
+            color: #166534;
+        }
+    </style>
+</head>
+<body>
+    <h1>E-Commerce Data Model - Redis Key-Value Store</h1>
+
+    <div class="container">
+        <!-- Column 1: Customer & Order -->
+        <div class="column">
+            <div class="column-title">Customer & Order</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    customer:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>zip, city, state</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:57-63</span>
+r.<span class="function">hset</span>(<span class="string">f"customer:{customer_id}"</span>, mapping={
+    <span class="string">"zip"</span>: row[<span class="string">"customer_zip_code_prefix"</span>],
+    <span class="string">"city"</span>: row[<span class="string">"customer_city"</span>],
+    <span class="string">"state"</span>: state
+})
+r.<span class="function">sadd</span>(<span class="string">f"state:{state}:customers"</span>, customer_id)
+r.<span class="function">sadd</span>(<span class="string">"customer:all"</span>, customer_id)</code>
+                </div>
+            </div>
+
+            <div class="arrow">▼</div>
+
+            <div class="card list">
+                <div class="card-header">
+                    customer:&lt;id&gt;:orders <span class="type-badge">(List)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>[ order_id1, order_id2, ... ]</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:108</span>
+r.<span class="function">lpush</span>(<span class="string">f"customer:{customer_id}:orders"</span>,
+    order_id)</code>
+                </div>
+            </div>
+
+            <div class="arrow">▼</div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    order:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>customer_id, status</li>
+                        <li>purchase_ts, approved_ts</li>
+                        <li>delivered_carrier_ts</li>
+                        <li>delivered_customer_ts</li>
+                        <li>freight_value, seller_id</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:99-107</span>
+r.<span class="function">hset</span>(<span class="string">f"order:{order_id}"</span>, mapping={
+    <span class="string">"customer_id"</span>: customer_id,
+    <span class="string">"status"</span>: status,
+    <span class="string">"purchase_ts"</span>: row[<span class="string">"order_purchase_timestamp"</span>],
+    <span class="string">"approved_ts"</span>: row.get(<span class="string">"order_approved_at"</span>),
+    ...
+})
+r.<span class="function">sadd</span>(<span class="string">f"order:status:{status}"</span>, order_id)
+r.<span class="function">sadd</span>(<span class="string">"order:all"</span>, order_id)</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Order Details -->
+        <div class="column">
+            <div class="column-title">Order Details</div>
+
+            <div class="card list">
+                <div class="card-header">
+                    order:&lt;id&gt;:items <span class="type-badge">(List)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>[ product_id1, ... ]</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:205</span>
+r.<span class="function">lpush</span>(<span class="string">f"order:{order_id}:items"</span>, product_id)</code>
+                </div>
+            </div>
+
+            <div class="card list">
+                <div class="card-header">
+                    order:&lt;id&gt;:payments <span class="type-badge">(List)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>[ {type, installments, value} ]</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:264-270</span>
+payment = json.<span class="function">dumps</span>({
+    <span class="string">"type"</span>: payment_type,
+    <span class="string">"installments"</span>: row[<span class="string">"payment_installments"</span>],
+    <span class="string">"value"</span>: row[<span class="string">"payment_value"</span>]
+})
+r.<span class="function">lpush</span>(<span class="string">f"order:{order_id}:payments"</span>, payment)</code>
+                </div>
+            </div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    order:&lt;id&gt;:review <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>score (1-5)</li>
+                        <li>comment_title, comment</li>
+                        <li>creation_date</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:322-327</span>
+r.<span class="function">hset</span>(<span class="string">f"order:{order_id}:review"</span>, mapping={
+    <span class="string">"score"</span>: score,
+    <span class="string">"comment_title"</span>: row.get(<span class="string">"review_comment_title"</span>),
+    <span class="string">"comment"</span>: row.get(<span class="string">"review_comment_message"</span>)[:500],
+    <span class="string">"creation_date"</span>: row.get(<span class="string">"review_creation_date"</span>)
+})
+r.<span class="function">zadd</span>(<span class="string">"review:scores"</span>, {order_id: score})</code>
+                </div>
+            </div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    product:&lt;id&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>category, weight, price</li>
+                        <li>length, height, width</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:145-152</span>
+r.<span class="function">hset</span>(<span class="string">f"product:{product_id}"</span>, mapping={
+    <span class="string">"category"</span>: category,
+    <span class="string">"weight"</span>: row.get(<span class="string">"product_weight_g"</span>),
+    <span class="string">"length"</span>: row.get(<span class="string">"product_length_cm"</span>),
+    ...
+})
+r.<span class="function">sadd</span>(<span class="string">f"category:{category}:products"</span>, product_id)
+r.<span class="function">sadd</span>(<span class="string">"product:all"</span>, product_id)</code>
+                </div>
+            </div>
+
+            <div class="card hash">
+                <div class="card-header">
+                    seller:&lt;id&gt; / geo:&lt;zip&gt; <span class="type-badge">(Hash)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>zip, city, state / lat, lng</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:371-377, 416-421</span>
+r.<span class="function">hset</span>(<span class="string">f"seller:{seller_id}"</span>, mapping={...})
+r.<span class="function">sadd</span>(<span class="string">f"state:{state}:sellers"</span>, seller_id)
+
+r.<span class="function">hset</span>(<span class="string">f"geo:{zip_code}"</span>, mapping={
+    <span class="string">"lat"</span>: lat, <span class="string">"lng"</span>: lng, <span class="string">"city"</span>: city
+})</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 3: Secondary Indexes -->
+        <div class="column">
+            <div class="column-title">Secondary Indexes</div>
+
+            <div class="card set">
+                <div class="card-header">
+                    Global Indexes <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <div class="index-grid">
+                        <div class="index-item">order:all</div>
+                        <div class="index-item">customer:all</div>
+                        <div class="index-item">product:all</div>
+                        <div class="index-item">seller:all</div>
+                    </div>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py</span>
+r.<span class="function">sadd</span>(<span class="string">"order:all"</span>, order_id)
+r.<span class="function">sadd</span>(<span class="string">"customer:all"</span>, customer_id)
+r.<span class="function">sadd</span>(<span class="string">"product:all"</span>, product_id)
+r.<span class="function">sadd</span>(<span class="string">"seller:all"</span>, seller_id)</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    Status Indexes <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <div class="index-grid">
+                        <div class="index-item">order:status:delivered</div>
+                        <div class="index-item">order:status:shipped</div>
+                        <div class="index-item">order:status:processing</div>
+                        <div class="index-item">order:status:canceled</div>
+                    </div>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:109</span>
+r.<span class="function">sadd</span>(<span class="string">f"order:status:{status}"</span>, order_id)
+
+<span class="comment"># queries.py:95-102 (Update status)</span>
+old = r.<span class="function">hget</span>(<span class="string">f"order:{order_id}"</span>, <span class="string">"status"</span>)
+r.<span class="function">srem</span>(<span class="string">f"order:status:{old}"</span>, order_id)
+r.<span class="function">hset</span>(<span class="string">f"order:{order_id}"</span>, <span class="string">"status"</span>, new)
+r.<span class="function">sadd</span>(<span class="string">f"order:status:{new}"</span>, order_id)</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    Geographic Indexes <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <div class="index-grid">
+                        <div class="index-item">state:SP:customers</div>
+                        <div class="index-item">state:RJ:customers</div>
+                        <div class="index-item">state:SP:sellers</div>
+                        <div class="index-item">state:RJ:sellers</div>
+                    </div>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:62, 376</span>
+r.<span class="function">sadd</span>(<span class="string">f"state:{state}:customers"</span>, customer_id)
+r.<span class="function">sadd</span>(<span class="string">f"state:{state}:sellers"</span>, seller_id)
+
+<span class="comment"># queries.py:253-267</span>
+<span class="keyword">for</span> state <span class="keyword">in</span> states:
+    count = r.<span class="function">scard</span>(<span class="string">f"state:{state}:customers"</span>)</code>
+                </div>
+            </div>
+
+            <div class="card set">
+                <div class="card-header">
+                    category:&lt;name&gt;:products <span class="type-badge">(Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>→ Set of Product-IDs</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:152</span>
+r.<span class="function">sadd</span>(<span class="string">f"category:{category}:products"</span>,
+    product_id)</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 4: Rankings -->
+        <div class="column">
+            <div class="column-title">Rankings & Analytics</div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    product:sales <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Product-ID</li>
+                        <li>Score: Sales Count</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:214, 232</span>
+product_sales[product_id] = \
+    product_sales.get(product_id, 0) + 1
+...
+r.<span class="function">zadd</span>(<span class="string">"product:sales"</span>, {product_id: sales})</code>
+                </div>
+            </div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    product:revenue <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Product-ID</li>
+                        <li>Score: Total Revenue</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:215, 234</span>
+product_revenue[product_id] += price
+...
+r.<span class="function">zadd</span>(<span class="string">"product:revenue"</span>, {product_id: revenue})</code>
+                </div>
+            </div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    category:revenue <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Category, Score: Revenue</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:218, 236-237</span>
+category_revenue[category] += price
+...
+r.<span class="function">zadd</span>(<span class="string">"category:revenue"</span>, {category: revenue})</code>
+                </div>
+            </div>
+
+            <div class="card sorted-set">
+                <div class="card-header">
+                    review:scores <span class="type-badge">(Sorted Set)</span>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Member: Order-ID, Score: 1-5</li>
+                    </ul>
+                </div>
+                <div class="code-block">
+<code><span class="comment"># import.py:328</span>
+r.<span class="function">zadd</span>(<span class="string">"review:scores"</span>, {order_id: score})</code>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fff7ed; border: 1px solid #f97316;">
+                <div style="font-size: 9px; color: #c2410c; font-weight: 600; margin-bottom: 3px;">Top-N Queries:</div>
+<pre style="font-size: 8px; color: #c2410c; margin: 0; font-family: monospace;">
+# queries.py:135-143, 146-154
+r.zrevrange("product:sales", 0, n-1, withscores=True)
+r.zrevrange("product:revenue", 0, n-1, withscores=True)
+r.zrevrange("category:revenue", 0, n-1, withscores=True)</pre>
+            </div>
+
+            <div class="info-box" style="background: #f0f9ff; border: 1px solid #3b82f6;">
+                <div style="font-size: 9px; color: #1d4ed8; font-weight: 600; margin-bottom: 3px;">Review Distribution:</div>
+<pre style="font-size: 8px; color: #1d4ed8; margin: 0; font-family: monospace;">
+# queries.py:207-216
+results = r.zrange("review:score:distribution",
+    0, -1, withscores=True)
+for score, count in results:
+    pct = (count / total * 100)
+    bar = "█" * int(pct / 2)</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
+            Hash
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #22c55e;"></div>
+            Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f97316;"></div>
+            Sorted Set
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #a855f7;"></div>
+            List
+        </div>
+    </div>
+
+    <div class="note">
+        E-Commerce Use Case - Redis Data Model with Orders, Products, Reviews, and Rankings | Python: e_commerce/import.py, e_commerce/queries.py
+    </div>
+</body>
+</html>
