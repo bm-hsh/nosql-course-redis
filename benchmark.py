@@ -238,18 +238,23 @@ def benchmark_social_media():
 
 def benchmark_scalability():
     """Test how performance scales with data size."""
-    print_header("SCALABILITY TEST (Write Performance)")
+    print(f"\n{'='*70}")
+    print(f"  SCALABILITY TEST")
+    print(f"{'='*70}")
 
     sizes = [100, 1000, 10000]
 
-    print(f"\n  Testing bulk insert performance...")
+    # Part 1: Write Performance
+    print(f"\n  Write Performance (Pipeline):")
     print(f"  {'Records':<12} {'Total Time':>12} {'Records/sec':>14}")
     print(f"  {'-'*12} {'-'*12} {'-'*14}")
 
     for size in sizes:
         # Clean up
+        pipe = r.pipeline()
         for i in range(size):
-            r.delete(f"bench:scale:{i}")
+            pipe.delete(f"bench:scale:{i}")
+        pipe.execute()
 
         # Measure insert time
         start = time.perf_counter()
@@ -265,9 +270,45 @@ def benchmark_scalability():
 
         print(f"  {size:<12} {elapsed:>12.3f}s {size/elapsed:>14,.0f}")
 
-        # Clean up
+    # Part 2: Read Latency at Different Data Sizes
+    print(f"\n  Read Latency vs. Data Size (O(1) Test):")
+    print(f"  {'Total Keys':<15} {'HGETALL Latency':>18} {'Stable?':>10}")
+    print(f"  {'-'*15} {'-'*18} {'-'*10}")
+
+    # Test read latency with increasing data sizes
+    test_sizes = [1000, 10000, 100000]
+
+    for size in test_sizes:
+        # Create keys
+        pipe = r.pipeline()
         for i in range(size):
-            r.delete(f"bench:scale:{i}")
+            pipe.hset(f"bench:read:{i}", mapping={"field": f"value{i}"})
+        pipe.execute()
+
+        # Measure read latency (average of 1000 reads)
+        latencies = []
+        for _ in range(1000):
+            key = f"bench:read:{size // 2}"  # Read middle key
+            start = time.perf_counter()
+            r.hgetall(key)
+            elapsed = (time.perf_counter() - start) * 1000
+            latencies.append(elapsed)
+
+        avg_latency = sum(latencies) / len(latencies)
+        stable = "Yes" if avg_latency < 0.5 else "No"
+        print(f"  {size:<15,} {avg_latency:>15.3f} ms {stable:>10}")
+
+        # Cleanup
+        pipe = r.pipeline()
+        for i in range(size):
+            pipe.delete(f"bench:read:{i}")
+        pipe.execute()
+
+    # Cleanup write test keys
+    pipe = r.pipeline()
+    for i in range(max(sizes)):
+        pipe.delete(f"bench:scale:{i}")
+    pipe.execute()
 
 
 #############################################################
@@ -276,7 +317,9 @@ def benchmark_scalability():
 
 def show_memory_usage():
     """Show Redis memory usage statistics."""
-    print_header("MEMORY USAGE")
+    print(f"\n{'='*70}")
+    print(f"  MEMORY USAGE")
+    print(f"{'='*70}")
 
     info = r.info("memory")
 
@@ -316,7 +359,9 @@ def show_memory_usage():
 
 def benchmark_latency():
     """Measure operation latency percentiles."""
-    print_header("LATENCY DISTRIBUTION (1000 HGETALL operations)")
+    print(f"\n{'='*70}")
+    print(f"  LATENCY DISTRIBUTION (1000 HGETALL operations)")
+    print(f"{'='*70}")
 
     # Use a real key if available
     test_key = "movie:1" if r.exists("movie:1") else "sensor:1"
